@@ -61,28 +61,32 @@ def defineParejas(tamPop, padres):
 
 def torneoProbabilistico(tamTorneo, parejas):
   pseleccion = 0.75#probabilidad de seleccion
+  indices_eliminar = []
   for i in range(0, tamTorneo, 2):
     #generamos un numero aleatorio entre 0 y 1 que es la probabilidad de seleccion
     seleccion = random.uniform(0,1)
-    if seleccion <= pseleccion:
+    if i+1 >= len(parejas):
+      break
+    elif seleccion <= pseleccion:
       #selecciona el mejor individuo
       if parejas[i][1] > parejas[i+1][1]:
-        #lo marcamos para eliminarlo
-        parejas[i+1].append(True)
+        #elimina al individuo de menor aptitud
+        indices_eliminar.append(i+1)
       else:
-        parejas[i].append(True)
+        indices_eliminar.append(i)
     else:
       #selecciona el peor individuo
       if parejas[i][1] < parejas[i+1][1]:
-        #elimina al individuo de mayor aptitud
-        parejas[i+1].append(True)
+        #elimina al individuo de menor aptitud
+        indices_eliminar.append(i+1)
       else:
-        parejas[i].append(True)
+        indices_eliminar.append(i)
   #eliminamos los individuos marcados
-  for i in range(len(parejas)-1, -1, -1):
-    if len(parejas[i]) == 3:
-      parejas.pop(i)
+  indices_eliminar.sort(reverse=True)
+  for i in indices_eliminar:
+    parejas.pop(i)
   return parejas
+
 
 #funcion de cruce
 def orderBasedCrossover(padres, n, tam_poblacion):
@@ -119,16 +123,63 @@ def orderBasedCrossover(padres, n, tam_poblacion):
     
   return hijos
 
+#funcion para reemplazar los -1 por los valores del otro padre
 def reemplazarValor(hijo, padre):
   for i in range(len(padre)):
     if padre[i] not in hijo:
       return padre[i]
+    
+#funcion de mutacion
+def mutacionIntercambioReciproco(cuadro):
+  #generamos dos numeros aleatorios no repetidos
+  puntos = random.sample(range(0, len(cuadro)-1), 2)
+  #intercambiamos los valores
+  aux = cuadro[puntos[0]]
+  cuadro[puntos[0]] = cuadro[puntos[1]]
+  cuadro[puntos[1]] = aux
+  return cuadro
 
-#probamos orden based crossover
-padres = [[1,2,3,4,5,6,7,8,9], [9,8,7,6,5,4,3,2,1], [1,2,3,4,5,6,7,8,9], [8,2,3,1,6,5,4,7,9]]
-aptitud = evaluar_aptitud(padres, 3, 15)
-print('aptitud ',aptitud)
-hijos = orderBasedCrossover(padres, 3, 4)
-print('hijos ',hijos)
-aptitud = evaluar_aptitud(hijos, 3, 15)
-print('aptitud hijos ',aptitud)
+#itera sobre la poblacion y aplica la mutacion si cumple con la probabilidad
+def mutaciones(poblacion, coeficienteDeMutacion):
+  for i in range(len(poblacion)):
+    #generamos un numero aleatorio entre 0 y 1 que es la probabilidad de mutacion
+    mutacion = random.uniform(0,1)
+    if mutacion <= coeficienteDeMutacion:
+      poblacion[i][0] = mutacionIntercambioReciproco(poblacion[i][0])
+  return poblacion
+
+def algoritmoGenetico(n, coeficienteDeMutacion, generaciones, tam_poblacion):
+  #inicializamos la poblacion
+  poblacion = inicializar_poblacion(n, tam_poblacion)
+  #calculamos la constante magica
+  cm = int((n*(n*n+1))/2)
+  #evaluamos la aptitud de la poblacion
+  poblacion = evaluar_aptitud(poblacion, n, cm)
+  #iteramos por el numero de generaciones
+  for i in range(generaciones):
+    #seleccionamos los padres
+    padres = poblacion
+    #generamos los hijos
+    hijos = orderBasedCrossover(padres, n, len(poblacion))
+    #evaluamos la aptitud de los hijos
+    hijos = evaluar_aptitud(hijos, n, cm)
+    #unimos los hijos con los padres
+    poblacion = padres + hijos
+    #ordenamos la poblacion de menor a mayor aptitud
+    poblacion.sort(key=lambda x: x[1])
+    #aplicamos las mutaciones
+    poblacion = mutaciones(poblacion, coeficienteDeMutacion)
+    #ordenamos la poblacion de menor a mayor aptitud
+    poblacion.sort(key=lambda x: x[1])
+    #eliminamos los individuos menos aptos
+    poblacion = poblacion[:tam_poblacion]
+    #imprimimos la mejor aptitud
+    print("Generacion: ", i+1, " Mejor aptitud: ", poblacion[0][1])
+    #si la aptitud es 0, terminamos el algoritmo
+    if poblacion[0][1] == 0:
+      break
+  #imprimimos el mejor cuadrado
+  print("Mejor cuadrado: ", poblacion[0][0])
+
+
+algoritmoGenetico(3, 0.1, 100, 2)
