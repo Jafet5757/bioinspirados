@@ -1,4 +1,5 @@
 import random
+from itertools import permutations
 #Cudrados mágicos usando algoritmos genéticos
 
 #n es el tamaño del cuadrado
@@ -6,8 +7,8 @@ def inicializar_poblacion(n, tam_poblacion):
     poblacion = []
     for i in range(tam_poblacion):
       cuadrado = []#representamos al cuadrado en una linea [1,2,3,4,5,6,7,8,9]
-      for j in range(n*n):
-        cuadrado.append(j+1)
+      #generamos n*n numeros aleatorios no repetidos
+      cuadrado = random.sample(range(1, n*n+1), n*n)
       poblacion.append(cuadrado)
     return poblacion
 
@@ -60,7 +61,7 @@ def defineParejas(tamPop, padres):
 
 
 def torneoProbabilistico(tamTorneo, parejas):
-  pseleccion = 0.75#probabilidad de seleccion
+  pseleccion = 0.8 #probabilidad de seleccion
   indices_eliminar = []
   for i in range(0, tamTorneo, 2):
     #generamos un numero aleatorio entre 0 y 1 que es la probabilidad de seleccion
@@ -123,6 +124,26 @@ def orderBasedCrossover(padres, n, tam_poblacion):
     
   return hijos
 
+#funcion alternativa de mutacion heuristica
+def mutacionHeuristica(cuadro,n,cm):
+  #generamos n*n/2 numeros aleatorios no repetidos
+  puntos = random.sample(range(0, len(cuadro)-1), int(len(cuadro)/2))
+  #obtenemos todas las posibles permutaciones
+  permutaciones = list(permutations(puntos))
+  #generamos los nuevos cuadrados por cada permutacion
+  cuadrados = []
+  for i in range(len(permutaciones)):
+    nuevoCuadrado = list(cuadro)
+    for j in range(len(permutaciones[i])):
+      nuevoCuadrado[puntos[j]] = cuadro[permutaciones[i][j]]
+    cuadrados.append(nuevoCuadrado)
+  #calculamos la aptitud de cada cuadrado
+  aptitudes = evaluar_aptitud(cuadrados, n, cm)
+  #ordenamos los cuadrados de menor a mayor aptitud
+  aptitudes.sort(key=lambda x: x[1])
+  #retornamos el mejor cuadrado
+  return aptitudes[0][0]
+
 #funcion para reemplazar los -1 por los valores del otro padre
 def reemplazarValor(hijo, padre):
   for i in range(len(padre)):
@@ -140,12 +161,14 @@ def mutacionIntercambioReciproco(cuadro):
   return cuadro
 
 #itera sobre la poblacion y aplica la mutacion si cumple con la probabilidad
-def mutaciones(poblacion, coeficienteDeMutacion):
+def mutaciones(poblacion, coeficienteDeMutacion, n, cm):
   for i in range(len(poblacion)):
     #generamos un numero aleatorio entre 0 y 1 que es la probabilidad de mutacion
     mutacion = random.uniform(0,1)
     if mutacion <= coeficienteDeMutacion:
-      poblacion[i][0] = mutacionIntercambioReciproco(poblacion[i][0])
+      poblacion[i][0] = mutacionHeuristica(poblacion[i][0],n,cm)
+      #calculamos la aptitud del individuo mutado
+      poblacion[i][1] = evaluar_aptitud([poblacion[i][0]], n, cm)[0][1]
   return poblacion
 
 def algoritmoGenetico(n, coeficienteDeMutacion, generaciones, tam_poblacion):
@@ -168,7 +191,7 @@ def algoritmoGenetico(n, coeficienteDeMutacion, generaciones, tam_poblacion):
     #ordenamos la poblacion de menor a mayor aptitud
     poblacion.sort(key=lambda x: x[1])
     #aplicamos las mutaciones
-    poblacion = mutaciones(poblacion, coeficienteDeMutacion)
+    poblacion = mutaciones(poblacion, coeficienteDeMutacion, n, cm)
     #ordenamos la poblacion de menor a mayor aptitud
     poblacion.sort(key=lambda x: x[1])
     #eliminamos los individuos menos aptos
@@ -181,5 +204,4 @@ def algoritmoGenetico(n, coeficienteDeMutacion, generaciones, tam_poblacion):
   #imprimimos el mejor cuadrado
   print("Mejor cuadrado: ", poblacion[0][0])
 
-
-algoritmoGenetico(3, 0.1, 100, 2)
+algoritmoGenetico(3, 0.1, 100, 100)
