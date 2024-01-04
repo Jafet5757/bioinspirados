@@ -166,7 +166,7 @@ def mutaciones(poblacion, coeficienteDeMutacion, n, cm):
     #generamos un numero aleatorio entre 0 y 1 que es la probabilidad de mutacion
     mutacion = random.uniform(0,1)
     if mutacion <= coeficienteDeMutacion:
-      poblacion[i][0] = mutacionHeuristica(poblacion[i][0],n,cm)
+      poblacion[i][0] = mutacionHeuristica(poblacion[i][0], n, cm)
       #calculamos la aptitud del individuo mutado
       poblacion[i][1] = evaluar_aptitud([poblacion[i][0]], n, cm)[0][1]
   return poblacion
@@ -204,4 +204,4 @@ def algoritmoGenetico(n, coeficienteDeMutacion, generaciones, tam_poblacion):
   #imprimimos el mejor cuadrado
   print("Mejor cuadrado: ", poblacion[0][0])
 
-algoritmoGenetico(3, 0.1, 100, 100)
+algoritmoGenetico(2, 0.1, 10000, 100)
